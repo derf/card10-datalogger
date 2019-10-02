@@ -59,6 +59,8 @@ def render_battery(disp, bat, voltage):
 
 def run_loop():
     bat = [1, [0, 230, 00], [255, 215, 0], [255, 0, 0]]
+    anim = 0
+    write_timer = 0
     with display.open() as disp:
         disp.clear()
         disp.backlight(5)
@@ -66,19 +68,59 @@ def run_loop():
         disp.update()
         disp.close()
     while True:
+        pressed = buttons.read(buttons.BOTTOM_LEFT | buttons.BOTTOM_RIGHT)
+        if pressed & buttons.BOTTOM_LEFT:
+            anim += 1
+        if pressed & buttons.BOTTOM_RIGHT:
+            anim += 2
+        if pressed:
+            if anim > 4:
+                anim = 0
+            if anim == 0:
+                leds.clear()
+                leds.set_rocket(0, 0)
+                leds.set_rocket(1, 0)
+                leds.set_rocket(2, 0)
+            if anim == 1:
+                leds.set_rocket(0, 0)
+                leds.set_rocket(1, 0)
+                leds.set_rocket(2, 0)
+                leds.gay(0.2)
+            if anim == 2:
+                leds.clear()
+                leds.set_rocket(0, 2)
+                leds.set_rocket(1, 15)
+                leds.set_rocket(2, 15)
+            if anim == 3:
+                leds.clear()
+                leds.set_rocket(0, 15)
+                leds.set_rocket(1, 15)
+                leds.set_rocket(2, 15)
+            if anim == 4:
+                leds.clear()
+                leds.set_rocket(0, 0)
+                leds.set_rocket(1, 0)
+                leds.set_rocket(2, 0)
+                leds.set(11, [127, 127, 127])
+                leds.set(12, [127, 127, 127])
+                leds.set(13, [127, 127, 127])
+                leds.set(14, [127, 127, 127])
         sensor_data = bme680.get_data()
         ambient_light = light_sensor.get_reading()
         battery_voltage = os.read_battery()
         with display.open() as disp:
             render_battery(disp, bat, battery_voltage)
             disp.print("{:2.1f} C {:2.0f} %".format(sensor_data[0], sensor_data[1]), posy=20)
-            disp.print("{:5.1f} hPa".format(sensor_data[2]), posy=40)
-            disp.print("{:4.1f} kOhm".format(sensor_data[3] / 1000), posy=60)
+            disp.print("{:5.1f} hPa ".format(sensor_data[2]), posy=40)
+            disp.print("{:4.1f} kOhm ".format(sensor_data[3] / 1000), posy=60)
             disp.update()
             disp.close()
-        with open('sensorlog.txt', 'a') as f:
-            f.write('{} {} {} {} {} {} {}\n'.format(utime.time(), sensor_data[0], sensor_data[1], sensor_data[2], sensor_data[3], ambient_light, battery_voltage))
-        utime.sleep(10)
+        write_timer += 1
+        if write_timer == 5:
+            with open('sensorlog.txt', 'a') as f:
+                f.write('{} {} {} {} {} {} {}\n'.format(utime.time(), sensor_data[0], sensor_data[1], sensor_data[2], sensor_data[3], ambient_light, battery_voltage))
+            write_timer = 0
+        utime.sleep(2)
 
 leds.clear()
 bme680.init()
