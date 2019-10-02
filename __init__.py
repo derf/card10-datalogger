@@ -51,8 +51,8 @@ def render_battery(disp, bat, voltage):
     if v > 4.1:
         disp.rect(140, 2, 155, 9, filled=True, col=c)
     else:
-        disp.rect(140, 2, 154, 8, filled=True, col=[0, 0, 0])
-        disp.rect(140, 2, 154, 8, filled=False, col=c)
+        disp.rect(140, 2, 154, 9, filled=True, col=[0, 0, 0])
+        disp.rect(140, 2, 154, 9, filled=False, col=c)
         if v > 3.5:
             disp.rect(141, 3, 142 + int((v - 3.5) * 20), 8, filled=True, col=c)
     disp.rect(155, 4, 157, 7, filled=True, col=c)
