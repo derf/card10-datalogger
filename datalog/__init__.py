@@ -68,13 +68,13 @@ def run_loop():
         disp.update()
         disp.close()
     while True:
-        pressed = buttons.read(buttons.BOTTOM_LEFT | buttons.BOTTOM_RIGHT)
-        if pressed & buttons.BOTTOM_LEFT:
-            anim += 1
+        pressed = buttons.read(buttons.BOTTOM_RIGHT | buttons.TOP_RIGHT)
         if pressed & buttons.BOTTOM_RIGHT:
+            anim += 1
+        if pressed & buttons.TOP_RIGHT:
             anim += 2
         if pressed:
-            if anim > 4:
+            if anim > 6:
                 anim = 0
             if anim == 0:
                 leds.clear()
@@ -87,16 +87,21 @@ def run_loop():
                 leds.set_rocket(2, 0)
                 leds.gay(0.2)
             if anim == 2:
+                leds.set_rocket(0, 0)
+                leds.set_rocket(1, 0)
+                leds.set_rocket(2, 0)
+                leds.gay(0.6)
+            if anim == 3:
                 leds.clear()
                 leds.set_rocket(0, 2)
                 leds.set_rocket(1, 15)
                 leds.set_rocket(2, 15)
-            if anim == 3:
+            if anim == 4:
                 leds.clear()
                 leds.set_rocket(0, 15)
                 leds.set_rocket(1, 15)
                 leds.set_rocket(2, 15)
-            if anim == 4:
+            if anim == 5:
                 leds.clear()
                 leds.set_rocket(0, 0)
                 leds.set_rocket(1, 0)
@@ -105,6 +110,13 @@ def run_loop():
                 leds.set(12, [127, 127, 127])
                 leds.set(13, [127, 127, 127])
                 leds.set(14, [127, 127, 127])
+            if anim == 6:
+                leds.clear()
+                leds.set_rocket(0, 0)
+                leds.set_rocket(1, 0)
+                leds.set_rocket(2, 0)
+                for i in range(15):
+                    leds.set(i, [120, 120, 120])
         sensor_data = bme680.get_data()
         ambient_light = light_sensor.get_reading()
         battery_voltage = os.read_battery()
