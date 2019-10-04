@@ -14,8 +14,8 @@ use Time::Progress;
 
 my %config = (
 	influxdb => {
-		server => '172.23.225.193',
-		port => 8086,
+		server   => '172.23.225.193',
+		port     => 8086,
 		database => 'mqtt',
 	}
 );
@@ -27,52 +27,67 @@ if ( not defined $config{influxdb}{database} ) {
 	die("Error: configuration must specify a database\n");
 }
 
-my ($logfile) = @ARGV;
-my $ua = LWP::UserAgent->new(timeout => 10);
-my $api_endpoint = sprintf('http://%s:%s/write?db=%s',
-	$config{influxdb}{server}, $config{influxdb}{port}, $config{influxdb}{database});
+my ($logfile)    = @ARGV;
+my $ua           = LWP::UserAgent->new( timeout => 10 );
+my $api_endpoint = sprintf(
+	'http://%s:%s/write?db=%s',
+	$config{influxdb}{server},
+	$config{influxdb}{port},
+	$config{influxdb}{database}
+);
 
 sub submit_to_influxdb {
 	my ($line) = @_;
-	$ua->post($api_endpoint, Content => $line);
+	$ua->post( $api_endpoint, Content => $line );
 }
 
-my ($end_epoch) = ($logfile =~ m{ ^ sensorlog - (\d+) [.] txt $ }x);
+my ($end_epoch) = ( $logfile =~ m{ ^ sensorlog - (\d+) [.] txt $ }x );
 
-$end_epoch //= DateTime->now(time_zone => 'UTC')->epoch;
+$end_epoch //= DateTime->now( time_zone => 'UTC' )->epoch;
 $end_epoch *= 1000;
 my @datapoints;
 
-for my $line (read_file($logfile)) {
+for my $line ( read_file($logfile) ) {
 	chomp($line);
-	my ($ts, $temperature, $humidity, $pressure, $raw_iaq, $brightness, $battery_voltage) = split(qr{ }, $line);
+	my ( $ts, $temperature, $humidity, $pressure, $raw_iaq, $brightness,
+		$battery_voltage )
+	  = split( qr{ }, $line );
 
-	push(@datapoints,
-	{
-		ts => $ts,
-		data => {
-			temperature_celsius => $temperature,
-			humidity_relpercent => $humidity,
-			pressure_hpa => $pressure,
-			iaq_ohm => $raw_iaq,
-			brightness_raw => $brightness,
-			battery_volt => $battery_voltage,
+	push(
+		@datapoints,
+		{
+			ts   => $ts,
+			data => {
+				temperature_celsius => $temperature,
+				humidity_relpercent => $humidity,
+				pressure_hpa        => $pressure,
+				iaq_ohm             => $raw_iaq,
+				brightness_raw      => $brightness,
+				battery_volt        => $battery_voltage,
+			}
 		}
-	}
 	);
 }
 
 my $last_ts = $datapoints[-1]{ts};
 
-my $delta = 10 * (scalar @datapoints);
+my $delta = 10 * ( scalar @datapoints );
 for my $datapoint (@datapoints) {
-	$datapoint->{ts} = $end_epoch - ($last_ts - $datapoint->{ts});
+	$datapoint->{ts} = $end_epoch - ( $last_ts - $datapoint->{ts} );
 }
 
-say 'First data point: ' . DateTime->from_epoch(epoch => $datapoints[0]{ts} / 1000, time_zone => 'UTC');
-say 'Last  data point: ' . DateTime->from_epoch(epoch => $datapoints[-1]{ts} / 1000, time_zone => 'UTC');
+say 'First data point: '
+  . DateTime->from_epoch(
+	epoch     => $datapoints[0]{ts} / 1000,
+	time_zone => 'UTC'
+  );
+say 'Last  data point: '
+  . DateTime->from_epoch(
+	epoch     => $datapoints[-1]{ts} / 1000,
+	time_zone => 'UTC'
+  );
 
-my $num_done = 0;
+my $num_done  = 0;
 my $num_total = @datapoints;
 
 my $progress = Time::Progress->new();
@@ -84,14 +99,19 @@ $progress->attr(
 STDERR->autoflush(1);
 
 for my $datapoint (@datapoints) {
-	for my $measurement (keys %{$datapoint->{data}}) {
+	for my $measurement ( keys %{ $datapoint->{data} } ) {
 		my $ts = $datapoint->{ts};
-		if (defined $datapoint->{data}{$measurement}) {
-			submit_to_influxdb("$measurement,area=mobile,location=card10 value=$datapoint->{data}{$measurement} ${ts}000000");
+		if ( defined $datapoint->{data}{$measurement} ) {
+			submit_to_influxdb(
+"$measurement,area=mobile,location=card10 value=$datapoint->{data}{$measurement} ${ts}000000"
+			);
 		}
 	}
 	$num_done++;
-	print STDERR $progress->report("\r\e[2KSubmitting log to InfluxDB... (%p done, %L elapsed, %E remaining)", $num_done);
+	print STDERR $progress->report(
+"\r\e[2KSubmitting log to InfluxDB... (%p done, %L elapsed, %E remaining)",
+		$num_done
+	);
 }
 
 print STDERR "\r\e[2K";
