@@ -109,7 +109,9 @@ def run_loop():
         ambient_light = light_sensor.get_reading()
         battery_voltage = os.read_battery()
         with display.open() as disp:
+            disp.clear()
             render_battery(disp, bat, battery_voltage)
+            disp.print("@derfnull", posy=0)
             disp.print("{:2.1f} C {:2.0f} %".format(sensor_data[0], sensor_data[1]), posy=20)
             disp.print("{:5.1f} hPa ".format(sensor_data[2]), posy=40)
             disp.print("{:4.1f} kOhm ".format(sensor_data[3] / 1000), posy=60)
@@ -118,7 +120,7 @@ def run_loop():
         write_timer += 1
         if write_timer == 5:
             with open('sensorlog.txt', 'a') as f:
-                f.write('{} {} {} {} {} {} {}\n'.format(utime.time(), sensor_data[0], sensor_data[1], sensor_data[2], sensor_data[3], ambient_light, battery_voltage))
+                f.write('{} {} {} {} {} {} {}\n'.format(utime.time_ms(), sensor_data[0], sensor_data[1], sensor_data[2], sensor_data[3], ambient_light, battery_voltage))
             write_timer = 0
         utime.sleep(2)
 

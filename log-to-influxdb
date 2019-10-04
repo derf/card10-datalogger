@@ -40,6 +40,7 @@ sub submit_to_influxdb {
 my ($end_epoch) = ($logfile =~ m{ ^ sensorlog - (\d+) [.] txt $ }x);
 
 $end_epoch //= DateTime->now(time_zone => 'UTC')->epoch;
+$end_epoch *= 1000;
 my @datapoints;
 
 for my $line (read_file($logfile)) {
@@ -65,13 +66,11 @@ my $last_ts = $datapoints[-1]{ts};
 
 my $delta = 10 * (scalar @datapoints);
 for my $datapoint (@datapoints) {
-	#$datapoint->{ts} = $end_epoch - ($last_ts - $datapoint->{ts});
-	$datapoint->{ts} = $end_epoch - $delta;
-	$delta -= 10;
+	$datapoint->{ts} = $end_epoch - ($last_ts - $datapoint->{ts});
 }
 
-say 'First data point: ' . DateTime->from_epoch(epoch => $datapoints[0]{ts}, time_zone => 'UTC');
-say 'Last  data point: ' . DateTime->from_epoch(epoch => $datapoints[-1]{ts}, time_zone => 'UTC');
+say 'First data point: ' . DateTime->from_epoch(epoch => $datapoints[0]{ts} / 1000, time_zone => 'UTC');
+say 'Last  data point: ' . DateTime->from_epoch(epoch => $datapoints[-1]{ts} / 1000, time_zone => 'UTC');
 
 my $num_done = 0;
 my $num_total = @datapoints;
@@ -88,7 +87,7 @@ for my $datapoint (@datapoints) {
 	for my $measurement (keys %{$datapoint->{data}}) {
 		my $ts = $datapoint->{ts};
 		if (defined $datapoint->{data}{$measurement}) {
-			submit_to_influxdb("$measurement,area=mobile,location=card10 value=$datapoint->{data}{$measurement} ${ts}000000000");
+			submit_to_influxdb("$measurement,area=mobile,location=card10 value=$datapoint->{data}{$measurement} ${ts}000000");
 		}
 	}
 	$num_done++;
